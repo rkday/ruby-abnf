@@ -99,6 +99,13 @@ module ABNF
     end
   end
 
+  class AlternateChars < Alternate
+    def initialize(string, &blk)
+      @choices = string.each_char.map { |c| Char.new(c) }
+      @blk = blk
+    end
+  end
+
   class Concat
     def initialize(*choices, &blk)
       @choices = choices

@@ -39,6 +39,19 @@ class ABNFTest < Test::Unit::TestCase
     assert parse(parser, "-")
   end
 
+  def test_alternate_char_parse
+    parser = AlternateChars.new("abcdef")
+    assert_nil parse(parser, ")")
+    assert_nil parse(parser, "-")
+    assert parse(parser, "a")
+    assert parse(parser, "b")
+    assert parse(parser, "c")
+    assert parse(parser, "d")
+    assert parse(parser, "e")
+    assert parse(parser, "f")
+    assert_nil parse(parser, "g")
+  end
+
 
   def test_example_1
 
