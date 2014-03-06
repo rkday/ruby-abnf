@@ -7,54 +7,54 @@ module ABNF
       self.last.times{|i| yield i}
     end
   end
-  
+
   class RangeWithInfiniteUpperBound
     def initialize(first)
       @first = first
     end
-    
+
     def first
       @first
     end
-    
+
     def until_end # &blk
       i = 0
-      
+
       while true
         yield i
         i += 1
       end
     end
   end
-  
+
   class Stream
     attr_reader :pos
-    
+
     def initialize(s, full = nil, pos = 0)
       @s = s
       @full = full.nil? ? s : full
       @pos = pos
     end
-    
+
     def first
       @s[0].ord if @s[0]
     end
-    
+
     def rest
       Stream.new(@s[1..-1], @full, @pos + 1)
     end
-    
+
     def clip(start)
       @full[start...@pos]
     end
   end
-  
+
   #
   # Helper Classes
-  
+
   class Satisfies
-    
-    # Takes a stream, returns a stream or failure. 
+
+    # Takes a stream, returns a stream or failure.
     def match(s)
       s.rest if predicate(s.first)
     end
@@ -64,7 +64,7 @@ module ABNF
     def initialize(r)
       @r = r
     end
-  
+
     def predicate(c)
       @r.member?(c)
     end
@@ -79,22 +79,22 @@ module ABNF
       @choices = choices
       @blk = blk
     end
-  
+
     def match(strm)
       start = strm.pos
-      
+
       @choices.each {
         |c|
-        
+
         n_strm = c.match(strm);
-        
+
         if n_strm
           @blk.call(n_strm.clip(start)) unless @blk.nil?
-          
+
           return n_strm
         end
       }
-      
+
       return nil
     end
   end
@@ -104,43 +104,43 @@ module ABNF
       @choices = choices
       @blk = blk
     end
-  
+
     def match(strm)
       c_strm = strm
       start = c_strm.pos
-      
+
       @choices.each {
         |c|
-        
+
         c_strm = c.match(c_strm)
-        
+
         return nil if c_strm.nil?
       }
-      
+
       @blk.call(c_strm.clip(start)) unless @blk.nil?
-      
+
       return c_strm
     end
   end
 
   class Repetition
-    
+
     # Spec: range (between), integer (exact), [:at_most, N], [:at_least, N], :any (zero or more)
     def initialize(spec, what, &blk)
       @spec = spec
       @what = what
       @blk = blk
     end
-    
+
     def match(strm)
       c_strm = strm
       start = strm.pos
-      
+
       r = \
         case @spec
         when Array # :at_least, :at_most
           option, i = @spec
-          
+
           if option == :at_most
             (0..i)
           elsif option == :at_least
@@ -153,7 +153,7 @@ module ABNF
         when Symbol # Any (zero or more)
           RangeWithInfiniteUpperBound.new(0)
         end
-      
+
       r.until_end {
         |i|
 
@@ -171,17 +171,17 @@ module ABNF
       }
 
       @blk.call(c_strm.clip(start)) unless @blk.nil?
-      
+
       c_strm
     end
   end
-  
-  class Optional < Repetition 
+
+  class Optional < Repetition
     def initialize(what)
       super([:at_most, 1], what)
     end
   end
-    	
+
   #
   # Core Rules
   #
@@ -189,14 +189,14 @@ module ABNF
 
   class Char < Satisfies
     def initialize(c)
-      @char = c
+      @char = c.ord
     end
 
     def predicate(c)
       c == @char
     end
   end
-  
+
   class Alpha < Alternate; def initialize; super(Range.new(0x41..0x5A), Range.new(0x61..0x7A)) end end
   class AsciiChar < Range; def initialize; super(0x1..0x7F) end end # char
   class Bit < Alternate; def initialize; super(Char.new(?0), Char.new(?1)) end end
@@ -211,19 +211,19 @@ module ABNF
   class Octet < Range; def initialize; super(0..255) end end # any 8-bit data value
   class VChar < Range; def initialize; super(0x21..0x7E) end end # visible (printing) characters
   class WSP < Alternate; def initialize; super(SP.new, HTab.new) end end # whitespace
-    
+
   class HexDigit < Alternate
     def initialize
       super(Digit.new, Range.new(0x41..0x46), Range.new(0x61..0x66))
     end
   end
-  
+
   class LWSP < Repetition # Linear white space (past newline)
     def initialize
       super(:any, Alternate.new(WSP.new, Concat.new(CRLF.new, WSP.new)))
     end
   end
-    
+
   def parse(parser, str)
     parser.match(Stream.new(str))
   end
