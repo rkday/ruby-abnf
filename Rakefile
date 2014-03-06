@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'rake'
 require 'rake/testtask'
-require 'rake/gempackagetask'
+require 'rubygems/package_task'
 
 Rake::TestTask.new do |t|
   t.libs << "test"
@@ -24,11 +24,11 @@ spec = Gem::Specification.new do |s|
   s.homepage = "http://karmalab.org/~rt"
   s.require_path = "lib"
   s.autorequire = GEM
-  s.files %w{README Rakefile TODO} + Dir.glob("{lib,test}/*")
+  s.files = %w{README Rakefile TODO} + Dir.glob("{lib,test}/*")
 end
 
-Rake::GemPackageTask.new(spec) do |pkg|
-  pkg.gem_spec = spec
+Gem::PackageTask.new(spec) do |pkg|
+  #pkg.gem_spec = spec
 end
 
 desc "Create the gemspec file."
