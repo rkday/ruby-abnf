@@ -52,6 +52,44 @@ class ABNFTest < Test::Unit::TestCase
     assert_nil parse(parser, "g")
   end
 
+  def test_literal_parse
+    parser = Literal.new("abcdef")
+    
+    assert parse(parser, "abcdef")
+    
+    assert_nil parse(parser, ")")
+    assert_nil parse(parser, "-")
+    assert_nil parse(parser, "a")
+    assert_nil parse(parser, "abcd")
+  end
+
+  def test_set_block
+    output = nil
+    parser = Literal.new("abcdef")
+    
+    assert parse(parser, "abcdef")
+    assert_nil output
+    
+    parser.set_block {|m| output = m}
+    
+    assert parse(parser, "abcdef")
+    
+    assert (output == "abcdef")
+  end
+
+  def test_optional_concat_parse
+    # Parser represents ["a" "b"] "c"
+    parser = Concat.new(OptionalConcat.new(Char.new(?a), Char.new(?b)), Char.new(?c))
+    
+    assert parse(parser, "abc")
+    assert parse(parser, "c")
+    
+    assert_nil parse(parser, ")")
+    assert_nil parse(parser, "-")
+    assert_nil parse(parser, "a")
+    assert_nil parse(parser, "ab")
+    assert_nil parse(parser, "ac")
+  end
 
   def test_example_1
 

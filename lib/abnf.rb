@@ -80,6 +80,11 @@ module ABNF
       @blk = blk
     end
 
+    def set_block(&blk)
+      @blk = blk
+      return self
+    end
+
     def match(strm)
       start = strm.pos
 
@@ -112,13 +117,18 @@ module ABNF
       @blk = blk
     end
 
+    def set_block(&blk)
+      @blk = blk
+      return self
+    end
+
     def match(strm)
       c_strm = strm
       start = c_strm.pos
 
       @choices.each {
         |c|
-
+        
         c_strm = c.match(c_strm)
 
         return nil if c_strm.nil?
@@ -130,13 +140,24 @@ module ABNF
     end
   end
 
-  class Repetition
+  class Literal < Concat
+    def initialize(string, &blk)
+      @choices = string.each_char.map { |c| Char.new(c) }
+      @blk = blk
+    end
+  end
 
+  class Repetition
     # Spec: range (between), integer (exact), [:at_most, N], [:at_least, N], :any (zero or more)
     def initialize(spec, what, &blk)
       @spec = spec
       @what = what
       @blk = blk
+    end
+
+    def set_block(&blk)
+      @blk = blk
+      return self
     end
 
     def match(strm)
@@ -186,6 +207,12 @@ module ABNF
   class Optional < Repetition
     def initialize(what)
       super([:at_most, 1], what)
+    end
+  end
+
+  class OptionalConcat < Optional
+    def initialize(*what)
+      super(Concat.new(*what))
     end
   end
 
